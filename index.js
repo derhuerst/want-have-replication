@@ -7,9 +7,8 @@ const {EventEmitter} = require('events')
 
 const HANDSHAKE = 0 // to find the leader
 const HAVE = 1 // peer has an item
-const WANT = 2 // peer wants an item
-const RECEIVE = 3 // leader is going to send an item
-const SEND = 4 // leader is going to wait for an item
+const RECEIVE = 2 // leader is going to send an item
+const SEND = 3 // leader is going to wait for an item
 
 const createPeer = (onItem) => {
 	const have = Object.create(null)
@@ -27,7 +26,6 @@ const createPeer = (onItem) => {
 		let handshakeDone = false, isLeader, x
 
 		const peerHas = []
-		const peerWants = []
 		let receivingId = null
 
 		const onPkt = (pkt) => { // [command, optional payload]
@@ -60,22 +58,15 @@ const createPeer = (onItem) => {
 
 				if (cmd === HAVE) {
 					if (!peerHas.includes(id)) peerHas.push(id)
-					const i = peerWants.indexOf(id)
-					if (i >= 0) peerWants.splice(i, 1)
-
 					if (!(id in have) && !want.includes(id)) {
 						want.push(id)
 						peer.emit('_want', id)
 					}
-				} else if (cmd === WANT) {
-					if (!peerWants.includes(id)) peerWants.push(id)
-				} else if (cmd === RECEIVE) {
-					if (isLeader) return // invalid command
+				} else if (cmd === RECEIVE && !isLeader) {
 					receivingId = id
-				} else if (cmd === SEND) {
-					if (isLeader) return // invalid command
+				} else if (cmd === SEND && !isLeader) {
 					outgoing.write(have[id])
-				} else return
+				} else return // invalid command
 			}
 
 			if (isLeader && handshakeDone) setTimeout(tick)
@@ -99,10 +90,9 @@ const createPeer = (onItem) => {
 				return
 			}
 
-			i = peerWants.findIndex(id => have[id])
-			if (i >= 0) {
-				const id = peerWants[i]
-				peerWants.splice(i, 1)
+			const id = Object.keys(have).find(id => !peerHas.includes(id))
+			if (id) {
+				peerHas.push(id)
 				outgoing.write([RECEIVE, id])
 				outgoing.write(have[id])
 
@@ -110,16 +100,8 @@ const createPeer = (onItem) => {
 			}
 		}
 
-		for (let id in have) {
-			peerWants.push(id)
-			outgoing.write([HAVE, id])
-		}
+		for (let id in have) outgoing.write([HAVE, id])
 		for (let id of want) outgoing.write([WANT, id])
-		peer.on('_have', (id) => {
-			if (!peerHas.includes(id) && !peerWants.includes(id)) {
-				peerWants.push(id)
-			}
-		})
 		sendHandshake()
 
 		return duplexer({objectMode: true}, incoming, outgoing)
