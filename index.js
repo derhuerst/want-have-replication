@@ -21,6 +21,10 @@ const createPeer = (name, onItem) => { // todo: remove name
 		peer.emit('_have', id)
 	}
 
+	const all = () => {
+		return Object.values(have)
+	}
+
 	const replicate = () => {
 		let handshakeDone = false, isLeader, x
 
@@ -117,8 +121,6 @@ const createPeer = (name, onItem) => { // todo: remove name
 				outgoing.push(have[id])
 
 				setTimeout(tick)
-			} else {
-				// todo: done events
 			}
 		}
 
@@ -139,6 +141,7 @@ const createPeer = (name, onItem) => { // todo: remove name
 
 	const peer = new EventEmitter()
 	peer.add = add
+	peer.all = all
 	peer.replicate = replicate
 	return peer
 }
