@@ -2,11 +2,11 @@
 
 const createPeer = require('.')
 
-const p1 = createPeer('p1', item => console.log('p1 received', item))
+const p1 = createPeer(item => console.log('p1 received', item))
 p1.add({foo: 'bar'})
 p1.add([1, 2])
 
-const p2 = createPeer('p2', item => console.log('p2 received', item))
+const p2 = createPeer(item => console.log('p2 received', item))
 p2.add({bar: 'baz'})
 
 const r1 = p1.replicate()

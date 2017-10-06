@@ -10,10 +10,10 @@ test('basic replication', (t) => {
 	const i1 = {foo: 'bar'}
 	const i2 = {bar: 'baz'}
 
-	const p1 = createPeer('p1', item => t.deepEqual(item, i2))
+	const p1 = createPeer(item => t.deepEqual(item, i2))
 	p1.add(i1)
 
-	const p2 = createPeer('p2', item => t.deepEqual(item, i1))
+	const p2 = createPeer(item => t.deepEqual(item, i1))
 	p2.add(i2)
 
 	const r1 = p1.replicate()

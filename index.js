@@ -11,7 +11,7 @@ const WANT = 2 // peer wants an item
 const RECEIVE = 3 // leader is going to send an item
 const SEND = 4 // leader is going to wait for an item
 
-const createPeer = (name, onItem) => { // todo: remove name
+const createPeer = (onItem) => {
 	const have = Object.create(null)
 	const want = []
 
