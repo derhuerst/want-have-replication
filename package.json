@@ -22,7 +22,8 @@
 	},
 	"dependencies": {
 		"crypto-random-string": "^1.0.0",
-		"duplexer3": "^0.1.4"
+		"duplexer3": "^0.1.4",
+		"ndjson": "^1.5.0"
 	},
 	"devDependencies": {
 		"tap-min": "^1.2.2",

@@ -1,9 +1,9 @@
 'use strict'
 
 const cryptoRandomString = require('crypto-random-string')
-const {EventEmitter} = require('events')
-const {Readable, Writable} = require('stream')
+const ndjson = require('ndjson')
 const duplexer = require('duplexer3')
+const {EventEmitter} = require('events')
 
 const HANDSHAKE = 0 // to find the leader
 const HAVE = 1 // peer has an item
@@ -21,9 +21,7 @@ const createPeer = (name, onItem) => { // todo: remove name
 		peer.emit('_have', id)
 	}
 
-	const all = () => {
-		return Object.values(have)
-	}
+	const all = () => Object.values(have)
 
 	const replicate = () => {
 		let handshakeDone = false, isLeader, x
@@ -32,7 +30,7 @@ const createPeer = (name, onItem) => { // todo: remove name
 		const peerWants = []
 		let receivingId = null
 
-		const onPkt = (pkt, _, cb) => { // [command, optional payload]
+		const onPkt = (pkt) => { // [command, optional payload]
 			if (receivingId) {
 				have[receivingId] = pkt
 				peer.emit('_have', receivingId)
@@ -40,7 +38,7 @@ const createPeer = (name, onItem) => { // todo: remove name
 
 				setImmediate(onItem, pkt)
 				if (isLeader) setTimeout(tick)
-				return cb()
+				return
 			}
 
 			if (!Array.isArray(pkt) || pkt.length === 0) {
@@ -49,19 +47,16 @@ const createPeer = (name, onItem) => { // todo: remove name
 			const cmd = pkt[0]
 
 			if (cmd === HANDSHAKE) {
-				if (handshakeDone) return cb() // invalid command
+				if (handshakeDone) return // invalid command
 				const peerX = pkt[1]
-				if ('number' !== typeof peerX) return cb() // invalid data
+				if ('number' !== typeof peerX) return // invalid data
 
-				if (peerX === x) {
-					sendHandshake()
-					return cb()
-				}
+				if (peerX === x) return sendHandshake()
 				isLeader = peerX < x
 				handshakeDone = true
 			} else {
 				const id = pkt[1]
-				if ('string' !== typeof id) return cb() // invalid data
+				if ('string' !== typeof id) return // invalid data
 
 				if (cmd === HAVE) {
 					if (!peerHas.includes(id)) peerHas.push(id)
@@ -75,41 +70,32 @@ const createPeer = (name, onItem) => { // todo: remove name
 				} else if (cmd === WANT) {
 					if (!peerWants.includes(id)) peerWants.push(id)
 				} else if (cmd === RECEIVE) {
-					if (isLeader) return cb() // invalid command
+					if (isLeader) return // invalid command
 					receivingId = id
 				} else if (cmd === SEND) {
-					if (isLeader) return cb() // invalid command
-					outgoing.push(have[id])
-				} else {
-					return cb()
-				}
+					if (isLeader) return // invalid command
+					outgoing.write(have[id])
+				} else return
 			}
 
 			if (isLeader && handshakeDone) setTimeout(tick)
-			return cb()
 		}
 
-		const incoming = new Writable({
-			objectMode: true, // todo: serialize, multiplex?
-			write: onPkt
-		})
-		const outgoing = new Readable({
-			objectMode: true, // todo: serialize, multiplex?
-			read: () => {}
-		})
+		const incoming = ndjson.parse() // todo: multiplex?
+		incoming.on('data', onPkt)
+		const outgoing = ndjson.stringify() // todo: multiplex?
 
 		const sendHandshake = () => {
 			x = Math.random()
-			outgoing.push([HANDSHAKE, x])
+			outgoing.write([HANDSHAKE, x])
 		}
 
 		const tick = () => {
-
 			let i = want.findIndex(id => peerHas.includes(id))
 			if (i >= 0) {
 				receivingId = want[i]
 				want.splice(i, 1)
-				outgoing.push([SEND, receivingId])
+				outgoing.write([SEND, receivingId])
 				return
 			}
 
@@ -117,8 +103,8 @@ const createPeer = (name, onItem) => { // todo: remove name
 			if (i >= 0) {
 				const id = peerWants[i]
 				peerWants.splice(i, 1)
-				outgoing.push([RECEIVE, id])
-				outgoing.push(have[id])
+				outgoing.write([RECEIVE, id])
+				outgoing.write(have[id])
 
 				setTimeout(tick)
 			}
@@ -126,9 +112,9 @@ const createPeer = (name, onItem) => { // todo: remove name
 
 		for (let id in have) {
 			peerWants.push(id)
-			outgoing.push([HAVE, id])
+			outgoing.write([HAVE, id])
 		}
-		for (let id of want) outgoing.push([WANT, id])
+		for (let id of want) outgoing.write([WANT, id])
 		peer.on('_have', (id) => {
 			if (!peerHas.includes(id) && !peerWants.includes(id)) {
 				peerWants.push(id)
