@@ -1,0 +1,33 @@
+{
+	"name": "want-have-replication",
+	"description": "Replicate items between two peers.",
+	"version": "0.1.0",
+	"main": "index.js",
+	"files": [
+		"index.js"
+	],
+	"keywords": [
+		"p2p",
+		"peer to peer",
+		"replicate",
+		"sync"
+	],
+	"author": "Jannis R <mail@jannisr.de>",
+	"homepage": "https://github.com/derhuerst/want-have-replication",
+	"repository": "derhuerst/want-have-replication",
+	"bugs": "https://github.com/derhuerst/want-have-replication/issues",
+	"license": "ISC",
+	"engines": {
+		"node": ">=6"
+	},
+	"dependencies": {
+	},
+	"devDependencies": {
+		"tape": "^4.8.0",
+		"tap-min": "^1.2.2"
+	},
+	"scripts": {
+		"test": "node test.js | tap-min",
+		"prepublishOnly": "npm test"
+	}
+}
