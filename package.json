@@ -21,10 +21,12 @@
 		"node": ">=6"
 	},
 	"dependencies": {
+		"crypto-random-string": "^1.0.0",
+		"duplexer3": "^0.1.4"
 	},
 	"devDependencies": {
-		"tape": "^4.8.0",
-		"tap-min": "^1.2.2"
+		"tap-min": "^1.2.2",
+		"tape": "^4.8.0"
 	},
 	"scripts": {
 		"test": "node test.js | tap-min",
