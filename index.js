@@ -1,6 +1,6 @@
 'use strict'
 
-const cryptoRandomString = require('crypto-random-string')
+const randomId = require('alphanumeric-id')
 const ndjson = require('ndjson')
 const duplexer = require('duplexer3')
 const {EventEmitter} = require('events')
@@ -15,7 +15,7 @@ const createPeer = (onItem) => {
 	const want = []
 
 	const add = (item) => {
-		const id = cryptoRandomString(12)
+		const id = randomId(12)
 		have[id] = item
 		peer.emit('_have', id)
 	}
@@ -32,6 +32,7 @@ const createPeer = (onItem) => {
 			if (receivingId) {
 				have[receivingId] = pkt
 				peer.emit('_have', receivingId)
+				peer.emit('add', pkt)
 				receivingId = null
 
 				setImmediate(onItem, pkt)
