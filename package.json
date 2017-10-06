@@ -1,6 +1,6 @@
 {
 	"name": "want-have-replication",
-	"description": "Replicate items between two peers.",
+	"description": "Replicate anything JSON-serialisable between two peers.",
 	"version": "0.2.0",
 	"main": "index.js",
 	"files": [
@@ -26,6 +26,7 @@
 		"ndjson": "^1.5.0"
 	},
 	"devDependencies": {
+		"lodash.sortby": "^4.7.0",
 		"tap-min": "^1.2.2",
 		"tape": "^4.8.0"
 	},

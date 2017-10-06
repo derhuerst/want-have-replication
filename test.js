@@ -1,10 +1,13 @@
 'use strict'
 
 const test = require('tape')
+const sortBy = require('lodash.sortBy')
 
 const createPeer = require('.')
 
-test('basic replication', (t) => {
+const noop = () => {}
+
+test('A <-> B replication', (t) => {
 	t.plan(4)
 
 	const i1 = {foo: 'bar'}
@@ -23,4 +26,32 @@ test('basic replication', (t) => {
 	const r1 = p1.replicate()
 	const r2 = p2.replicate()
 	r1.pipe(r2).pipe(r1)
+})
+
+test('A <-> B <-> C replication', (t) => {
+	t.plan(3)
+
+	const first = ['first item']
+	const A = createPeer(noop)
+	A.add(first)
+
+	const second = ['second item']
+	const B = createPeer(noop)
+	B.add(second)
+
+	const third = ['third item']
+	const C = createPeer(noop)
+	C.add(third)
+
+	const rA = A.replicate()
+	rA.pipe(B.replicate()).pipe(rA)
+	const rC = C.replicate()
+	rC.pipe(B.replicate()).pipe(rC)
+
+	setTimeout(() => {
+		const allThree = [first, second, third]
+		t.deepEqual(sortBy(A.all(), 0), allThree)
+		t.deepEqual(sortBy(B.all(), 0), allThree)
+		t.deepEqual(sortBy(C.all(), 0), allThree)
+	}, 100)
 })

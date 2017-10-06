@@ -30,9 +30,11 @@ const createPeer = (onItem) => {
 
 		const onPkt = (pkt) => { // [command, optional payload]
 			if (receivingId) {
-				have[receivingId] = pkt
-				peer.emit('_have', receivingId)
-				peer.emit('add', pkt)
+				if (!(receivingId in have)) {
+					have[receivingId] = pkt
+					peer.emit('_have', receivingId)
+					peer.emit('add', pkt)
+				}
 				receivingId = null
 
 				setImmediate(onItem, pkt)
@@ -82,6 +84,12 @@ const createPeer = (onItem) => {
 			outgoing.write([HANDSHAKE, x])
 		}
 
+		for (let id in have) outgoing.write([HAVE, id])
+		sendHandshake()
+		peer.on('_have', (id) => {
+			if (!peerHas.includes(id)) outgoing.write([HAVE, id])
+		})
+
 		const tick = () => {
 			let i = want.findIndex(id => peerHas.includes(id))
 			if (i >= 0) {
@@ -100,10 +108,6 @@ const createPeer = (onItem) => {
 				setTimeout(tick)
 			}
 		}
-
-		for (let id in have) outgoing.write([HAVE, id])
-		for (let id of want) outgoing.write([WANT, id])
-		sendHandshake()
 
 		return duplexer({objectMode: true}, incoming, outgoing)
 	}

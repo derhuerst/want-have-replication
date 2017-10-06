@@ -1,6 +1,6 @@
 # want-have-replication
 
-**Replicate items between two peers.**
+**Replicate anything JSON-serialisable between two peers.**
 
 [![npm version](https://img.shields.io/npm/v/want-have-replication.svg)](https://www.npmjs.com/package/want-have-replication)
 [![build status](https://img.shields.io/travis/derhuerst/want-have-replication.svg)](https://travis-ci.org/derhuerst/want-have-replication)
@@ -20,26 +20,29 @@ npm install want-have-replication
 ```js
 const createPeer = require('want-have-replication')
 
-const p1 = createPeer((item) => {
-	console.log('p1 received', item)
-})
-p1.add({foo: 'bar'})
-p1.add([1, 2])
+const A = createPeer(item => console.log('A received', item))
+A.add('first item')
 
-const p2 = createPeer((item) => {
-	console.log('p2 received', item)
-})
-p2.add({bar: 'baz'})
+const B = createPeer(item => console.log('B received', item))
+B.add(['second', 'item'])
 
-const r1 = p1.replicate()
-const r2 = p2.replicate()
-r1.pipe(r2).pipe(r1)
+const C = createPeer(item => console.log('C received', item))
+C.add({third: 'item'})
+
+// A <-> B <-> C replication
+const rA = A.replicate()
+rA.pipe(B.replicate()).pipe(rA)
+const rC = C.replicate()
+rC.pipe(B.replicate()).pipe(rC)
 ```
 
 ```
-p2 received { foo: 'bar' }
-p2 received [ 1, 2 ]
-p1 received { bar: 'baz' }
+A received [second: 'item']
+C received [second: 'item']
+B received 'first item'
+C received 'first item'
+B received {third: 'item'}
+A received {third: 'item'}
 ```
 
 
