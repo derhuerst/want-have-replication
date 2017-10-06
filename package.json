@@ -2,9 +2,11 @@
 	"name": "want-have-replication",
 	"description": "Replicate anything JSON-serialisable between two peers.",
 	"version": "0.2.0",
-	"main": "index.js",
+	"main": "./dist/index.js",
+	"module": "./index.js",
 	"files": [
-		"index.js"
+		"index.js",
+		"dist"
 	],
 	"keywords": [
 		"p2p",
@@ -22,6 +24,8 @@
 	},
 	"dependencies": {
 		"alphanumeric-id": "^1.0.1",
+		"babel-cli": "^6.26.0",
+		"babel-preset-env": "^1.6.0",
 		"duplexer3": "^0.1.4",
 		"ndjson": "^1.5.0"
 	},
@@ -31,7 +35,8 @@
 		"tape": "^4.8.0"
 	},
 	"scripts": {
+		"build": "babel index.js --presets env --out-dir dist",
 		"test": "node test.js | tap-min",
-		"prepublishOnly": "npm test"
+		"prepublishOnly": "npm run build && npm test"
 	}
 }
