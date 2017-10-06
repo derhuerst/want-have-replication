@@ -1,5 +1,7 @@
 # want-have-replication
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/derhuerst/want-have-replication.svg)](https://greenkeeper.io/)
+
 **Replicate items between two peers.**
 
 [![npm version](https://img.shields.io/npm/v/want-have-replication.svg)](https://www.npmjs.com/package/want-have-replication)
