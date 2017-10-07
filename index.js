@@ -9,6 +9,7 @@ const HANDSHAKE = 0 // to find the leader
 const HAVE = 1 // peer has an item
 const RECEIVE = 2 // leader is going to send an item
 const SEND = 3 // leader is going to wait for an item
+const SYNCED = 4 // all items have been synced (for now)
 
 const createPeer = (onItem) => {
 	const have = Object.create(null)
@@ -59,6 +60,8 @@ const createPeer = (onItem) => {
 				if (peerX === x) return sendHandshake()
 				isLeader = peerX < x
 				handshakeDone = true
+			} else if (cmd === SYNCED) {
+				replicationStream.emit('synced')
 			} else {
 				const id = pkt[1]
 				if ('string' !== typeof id) return // invalid data
@@ -110,10 +113,15 @@ const createPeer = (onItem) => {
 				outgoing.write(have[id])
 
 				setTimeout(tick)
+				return
 			}
+
+			outgoing.write([SYNCED])
+			replicationStream.emit('synced')
 		}
 
-		return duplexer({objectMode: true}, incoming, outgoing)
+		const replicationStream = duplexer({objectMode: true}, incoming, outgoing)
+		return replicationStream
 	}
 
 	const peer = new EventEmitter()

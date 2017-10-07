@@ -8,11 +8,11 @@ const createPeer = require('./dist')
 const noop = () => {}
 
 test('A <-> B replication', (t) => {
-	t.plan(4)
+	t.plan(2 + 2 + 2)
 
-	const i1 = {foo: 'bar'}
+	const i1 = ['bar', 'baz']
 	const onI2 = item => t.deepEqual(item, i2)
-	const i2 = {bar: 'baz'}
+	const i2 = ['foo', 'bar']
 	const onI1 = item => t.deepEqual(item, i1)
 
 	const p1 = createPeer(onI2)
@@ -26,10 +26,17 @@ test('A <-> B replication', (t) => {
 	const r1 = p1.replicate()
 	const r2 = p2.replicate()
 	r1.pipe(r2).pipe(r1)
+
+	r1.on('synced', () => {
+		t.deepEqual(sortBy(p1.all(), 0), [i1, i2])
+	})
+	r2.on('synced', () => {
+		t.deepEqual(sortBy(p2.all(), 0), [i1, i2])
+	})
 })
 
 test('A <-> B <-> C replication', (t) => {
-	t.plan(3)
+	t.plan(4)
 
 	const first = ['first item']
 	const A = createPeer(noop)
@@ -48,10 +55,10 @@ test('A <-> B <-> C replication', (t) => {
 	const rC = C.replicate()
 	rC.pipe(B.replicate()).pipe(rC)
 
-	setTimeout(() => {
-		const allThree = [first, second, third]
-		t.deepEqual(sortBy(A.all(), 0), allThree)
-		t.deepEqual(sortBy(B.all(), 0), allThree)
-		t.deepEqual(sortBy(C.all(), 0), allThree)
-	}, 100)
+	rA.on('synced', () => {
+		t.deepEqual(sortBy(A.all(), 0), [first, second, third])
+	})
+	rC.on('synced', () => {
+		t.deepEqual(sortBy(C.all(), 0), [first, second, third])
+	})
 })
