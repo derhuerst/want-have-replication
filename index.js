@@ -20,7 +20,11 @@ const createPeer = (onItem) => {
 		peer.emit('_have', id)
 	}
 
-	const all = () => Object.values(have)
+	const all = () => {
+		const all = []
+		for (let id in have) all.push(have[id])
+		return all
+	}
 
 	const replicate = () => {
 		let handshakeDone = false, isLeader, x
