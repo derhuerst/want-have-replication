@@ -1,7 +1,7 @@
 {
 	"name": "want-have-replication",
 	"description": "Replicate anything JSON-serialisable between two peers.",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"main": "./dist/index.js",
 	"module": "./index.js",
 	"files": [
@@ -24,12 +24,12 @@
 	},
 	"dependencies": {
 		"alphanumeric-id": "^1.0.1",
-		"babel-cli": "^6.26.0",
-		"babel-preset-env": "^1.6.0",
 		"duplexer3": "^0.1.4",
 		"ndjson": "^1.5.0"
 	},
 	"devDependencies": {
+		"babel-cli": "^6.26.0",
+		"babel-preset-env": "^1.7.0",
 		"lodash.sortby": "^4.7.0",
 		"tap-min": "^1.2.2",
 		"tape": "^4.8.0"
