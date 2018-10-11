@@ -31,7 +31,7 @@
 		"babel-cli": "^6.26.0",
 		"babel-preset-env": "^1.7.0",
 		"lodash.sortby": "^4.7.0",
-		"tap-min": "^1.2.2",
+		"tap-min": "1.2.2",
 		"tape": "^4.8.0"
 	},
 	"scripts": {
