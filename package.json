@@ -4,7 +4,8 @@
 	"version": "0.2.2",
 	"main": "./index.js",
 	"files": [
-		"index.js"
+		"index.js",
+		"lib"
 	],
 	"keywords": [
 		"p2p",
