@@ -12,23 +12,23 @@ const SEND = 3 // leader is going to wait for an item
 const SYNCED = 4 // all items have been synced (for now)
 
 const createPeer = (onItem) => {
-	const have = Object.create(null)
-	const want = []
+	const selfHas = Object.create(null)
+	const selfWants = []
 
 	const add = (item) => {
 		const id = randomId(12)
-		have[id] = item
-		peer.emit('_have', id)
+		selfHas[id] = item
+		self.emit('_have', id)
 	}
 
 	const all = () => {
 		const all = []
-		for (let id in have) all.push(have[id])
+		for (let id in selfHas) all.push(selfHas[id])
 		return all
 	}
 
 	const replicate = () => {
-		let handshakeDone = false, isLeader, x
+		let handshakeDone = false, isLeader, ownX
 		const peerHas = []
 		let idOfItemToBeReceived = null
 
@@ -44,10 +44,10 @@ const createPeer = (onItem) => {
 
 		const onPkt = (pkt) => { // [command, optional payload]
 			if (idOfItemToBeReceived) {
-				if (!(idOfItemToBeReceived in have)) {
-					have[idOfItemToBeReceived] = pkt
-					peer.emit('_have', idOfItemToBeReceived)
-					peer.emit('add', pkt)
+				if (!(idOfItemToBeReceived in selfHas)) {
+					selfHas[idOfItemToBeReceived] = pkt
+					self.emit('_have', idOfItemToBeReceived)
+					self.emit('add', pkt)
 				}
 				idOfItemToBeReceived = null
 
@@ -66,8 +66,8 @@ const createPeer = (onItem) => {
 				const peerX = pkt[1]
 				if ('number' !== typeof peerX) return // invalid data
 
-				if (peerX === x) return sendHandshake()
-				isLeader = peerX < x
+				if (peerX === ownX) return sendHandshake()
+				isLeader = peerX < ownX
 				handshakeDone = true
 			} else if (cmd === SYNCED) {
 				replicationStream.emit('synced')
@@ -77,14 +77,14 @@ const createPeer = (onItem) => {
 
 				if (cmd === HAVE) {
 					if (!peerHas.includes(id)) peerHas.push(id)
-					if (!(id in have) && !want.includes(id)) {
-						want.push(id)
-						peer.emit('_want', id)
+					if (!(id in selfHas) && !selfWants.includes(id)) {
+						selfWants.push(id)
+						self.emit('_want', id)
 					}
 				} else if (cmd === RECEIVE && !isLeader) {
 					idOfItemToBeReceived = id
 				} else if (cmd === SEND && !isLeader) {
-					sendPkt(have[id])
+					sendPkt(selfHas[id])
 				} else return // invalid command
 			}
 
@@ -92,24 +92,24 @@ const createPeer = (onItem) => {
 		}
 
 		const sendHandshake = () => {
-			x = Math.random()
-			sendCmd(HANDSHAKE, x)
+			ownX = Math.random()
+			sendCmd(HANDSHAKE, ownX)
 		}
 
 		const tick = () => {
-			let i = want.findIndex(id => peerHas.includes(id))
+			let i = selfWants.findIndex(id => peerHas.includes(id))
 			if (i >= 0) {
-				idOfItemToBeReceived = want[i]
-				want.splice(i, 1)
+				idOfItemToBeReceived = selfWants[i]
+				selfWants.splice(i, 1)
 				sendCmd(SEND, idOfItemToBeReceived)
 				return
 			}
 
-			const id = Object.keys(have).find(id => !peerHas.includes(id))
+			const id = Object.keys(selfHas).find(id => !peerHas.includes(id))
 			if (id) {
 				peerHas.push(id)
 				sendCmd(RECEIVE, id)
-				outgoing.write(have[id])
+				outgoing.write(selfHas[id])
 
 				setTimeout(tick)
 				return
@@ -120,9 +120,9 @@ const createPeer = (onItem) => {
 		}
 
 		incoming.on('data', onPkt)
-		for (let id in have) sendCmd(HAVE, id)
+		for (let id in selfHas) sendCmd(HAVE, id)
 		sendHandshake()
-		peer.on('_have', (id) => {
+		self.on('_have', (id) => {
 			if (!peerHas.includes(id)) sendCmd(HAVE, id)
 		})
 
@@ -130,12 +130,13 @@ const createPeer = (onItem) => {
 		return replicationStream
 	}
 
-	const peer = new EventEmitter()
-	peer.name = name
-	peer.add = add
-	peer.all = all
-	peer.replicate = replicate
-	return peer
+	const self = new EventEmitter()
+	self.name = name
+	self.add = add
+	self.all = all
+	self.replicate = replicate
+
+	return self
 }
 
 module.exports = createPeer
