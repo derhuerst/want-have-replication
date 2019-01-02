@@ -13,7 +13,12 @@ const RECEIVE = 2 // leader is going to send an item
 const SEND = 3 // leader is going to wait for an item
 const SYNCED = 4 // all items have been synced (for now)
 
-const createPeer = (onItem) => {
+const createPeer = (name, onItem) => {
+	if ('function' === typeof name) {
+		onItem = name
+		name = randomId(3)
+	}
+	if ('function' !== typeof onItem) throw new Error('onItem must be a function')
 	const selfHas = Object.create(null)
 	const selfWants = []
 
@@ -38,7 +43,7 @@ const createPeer = (onItem) => {
 		const outgoing = ndjson.stringify() // todo: multiplex?
 
 		const sendPkt = (pkt) => {
-			debugReplication('->', pkt)
+			debugReplication(name, '->', pkt)
 			outgoing.write(pkt)
 		}
 		const sendCmd = (cmd, ...args) => {
@@ -47,13 +52,13 @@ const createPeer = (onItem) => {
 
 		const onHandshakeCmd = (peerX) => { // [command, optional payload]
 			if (handshakeDone) {
-				return debugReplication('invalid packet', pkt)
+				return debugReplication(name, 'invalid packet', pkt)
 			}
 			if ('number' !== typeof peerX) {
-				return debugReplication('invalid packet', pkt)
+				return debugReplication(name, 'invalid packet', pkt)
 			}
 			if (peerX === ownX) {
-				debugReplication('equal handshake value, restarting')
+				debugReplication(name, 'equal handshake value, restarting')
 				return sendHandshake()
 			}
 			isLeader = peerX < ownX
@@ -63,7 +68,7 @@ const createPeer = (onItem) => {
 		const onHaveCmd = (id) => {
 			if (!peerHas.includes(id)) {
 				peerHas.push(id)
-				debugState('has', peerHas)
+				debugState(name, 'has', peerHas)
 			}
 			if (!(id in selfHas) && !selfWants.includes(id)) {
 				selfWants.push(id)
@@ -72,7 +77,7 @@ const createPeer = (onItem) => {
 		}
 
 		const onPkt = (pkt) => { // [command, optional payload]
-			debugReplication('<-', pkt)
+			debugReplication(name, '<-', pkt)
 
 			if (idOfItemToBeReceived) {
 				if (!(idOfItemToBeReceived in selfHas)) {
@@ -88,7 +93,7 @@ const createPeer = (onItem) => {
 			}
 
 			if (!Array.isArray(pkt) || pkt.length === 0) {
-				debugReplication('invalid packet', pkt)
+				debugReplication(name, 'invalid packet', pkt)
 				return
 			}
 			const cmd = pkt[0]
@@ -96,12 +101,12 @@ const createPeer = (onItem) => {
 			if (cmd === HANDSHAKE) {
 				onHandshakeCmd(...pkt.slice(1))
 			} else if (cmd === SYNCED) {
-				debugReplication('peer is synced')
+				debugReplication(name, 'peer is synced')
 				replicationStream.emit('synced')
 			} else {
 				const id = pkt[1]
 				if ('string' !== typeof id) {
-					debugReplication('invalid ID', pkt)
+					debugReplication(name, 'invalid ID', pkt)
 					return
 				}
 
@@ -112,7 +117,7 @@ const createPeer = (onItem) => {
 				} else if (cmd === SEND && !isLeader) {
 					sendPkt(selfHas[id])
 				} else {
-					debugReplication('invalid command', pkt)
+					debugReplication(name, 'invalid command', pkt)
 					return
 				}
 			}
@@ -126,7 +131,7 @@ const createPeer = (onItem) => {
 		}
 
 		const tick = () => {
-			debugReplication('tick')
+			debugReplication(name, 'tick')
 
 			let i = selfWants.findIndex(id => peerHas.includes(id))
 			if (i >= 0) {
@@ -139,7 +144,7 @@ const createPeer = (onItem) => {
 			const id = Object.keys(selfHas).find(id => !peerHas.includes(id))
 			if (id) {
 				peerHas.push(id)
-				debugState('has', peerHas)
+				debugState(name, 'has', peerHas)
 
 				sendCmd(RECEIVE, id)
 				outgoing.write(selfHas[id])
@@ -170,7 +175,7 @@ const createPeer = (onItem) => {
 	self.replicate = replicate
 
 	self.on('_have', () => {
-		debugState('has', Object.keys(selfHas))
+		debugState(name, 'has', Object.keys(selfHas))
 	})
 
 	return self
