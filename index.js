@@ -29,18 +29,27 @@ const createPeer = (onItem) => {
 
 	const replicate = () => {
 		let handshakeDone = false, isLeader, x
-
 		const peerHas = []
-		let receivingId = null
+		let idOfItemToBeReceived = null
+
+		const incoming = ndjson.parse() // todo: multiplex?
+		const outgoing = ndjson.stringify() // todo: multiplex?
+
+		const sendPkt = (pkt) => {
+			outgoing.write(pkt)
+		}
+		const sendCmd = (cmd, ...args) => {
+			sendPkt([cmd, ...args])
+		}
 
 		const onPkt = (pkt) => { // [command, optional payload]
-			if (receivingId) {
-				if (!(receivingId in have)) {
-					have[receivingId] = pkt
-					peer.emit('_have', receivingId)
+			if (idOfItemToBeReceived) {
+				if (!(idOfItemToBeReceived in have)) {
+					have[idOfItemToBeReceived] = pkt
+					peer.emit('_have', idOfItemToBeReceived)
 					peer.emit('add', pkt)
 				}
-				receivingId = null
+				idOfItemToBeReceived = null
 
 				setImmediate(onItem, pkt)
 				if (isLeader) setTimeout(tick)
@@ -73,58 +82,56 @@ const createPeer = (onItem) => {
 						peer.emit('_want', id)
 					}
 				} else if (cmd === RECEIVE && !isLeader) {
-					receivingId = id
+					idOfItemToBeReceived = id
 				} else if (cmd === SEND && !isLeader) {
-					outgoing.write(have[id])
+					sendPkt(have[id])
 				} else return // invalid command
 			}
 
 			if (isLeader && handshakeDone) setTimeout(tick)
 		}
 
-		const incoming = ndjson.parse() // todo: multiplex?
-		incoming.on('data', onPkt)
-		const outgoing = ndjson.stringify() // todo: multiplex?
-
 		const sendHandshake = () => {
 			x = Math.random()
-			outgoing.write([HANDSHAKE, x])
+			sendCmd(HANDSHAKE, x)
 		}
-
-		for (let id in have) outgoing.write([HAVE, id])
-		sendHandshake()
-		peer.on('_have', (id) => {
-			if (!peerHas.includes(id)) outgoing.write([HAVE, id])
-		})
 
 		const tick = () => {
 			let i = want.findIndex(id => peerHas.includes(id))
 			if (i >= 0) {
-				receivingId = want[i]
+				idOfItemToBeReceived = want[i]
 				want.splice(i, 1)
-				outgoing.write([SEND, receivingId])
+				sendCmd(SEND, idOfItemToBeReceived)
 				return
 			}
 
 			const id = Object.keys(have).find(id => !peerHas.includes(id))
 			if (id) {
 				peerHas.push(id)
-				outgoing.write([RECEIVE, id])
+				sendCmd(RECEIVE, id)
 				outgoing.write(have[id])
 
 				setTimeout(tick)
 				return
 			}
 
-			outgoing.write([SYNCED])
+			sendCmd(SYNCED)
 			replicationStream.emit('synced')
 		}
+
+		incoming.on('data', onPkt)
+		for (let id in have) sendCmd(HAVE, id)
+		sendHandshake()
+		peer.on('_have', (id) => {
+			if (!peerHas.includes(id)) sendCmd(HAVE, id)
+		})
 
 		const replicationStream = duplexer({objectMode: true}, incoming, outgoing)
 		return replicationStream
 	}
 
 	const peer = new EventEmitter()
+	peer.name = name
 	peer.add = add
 	peer.all = all
 	peer.replicate = replicate
