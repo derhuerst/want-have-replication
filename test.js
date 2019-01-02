@@ -15,7 +15,7 @@ test('A <-> B replication', (t) => {
 	const i2 = ['foo', 'bar']
 	const onI1 = item => t.deepEqual(item, i1)
 
-	const p1 = createPeer(onI2)
+	const p1 = createPeer('p1', onI2)
 	p1.add(i1)
 	p1.on('add', onI2)
 
@@ -39,15 +39,15 @@ test('A <-> B <-> C replication', (t) => {
 	t.plan(4)
 
 	const first = ['first item']
-	const A = createPeer(noop)
+	const A = createPeer('A', noop)
 	A.add(first)
 
 	const second = ['second item']
-	const B = createPeer(noop)
+	const B = createPeer('B', noop)
 	B.add(second)
 
 	const third = ['third item']
-	const C = createPeer(noop)
+	const C = createPeer('C', noop)
 	C.add(third)
 
 	const rA = A.replicate()

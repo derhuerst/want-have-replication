@@ -20,13 +20,13 @@ npm install want-have-replication
 ```js
 const createPeer = require('want-have-replication')
 
-const A = createPeer(item => console.log('A received', item))
+const A = createPeer('A', item => console.log('A received', item))
 A.add('first item')
 
-const B = createPeer(item => console.log('B received', item))
+const B = createPeer('B', item => console.log('B received', item))
 B.add(['second', 'item'])
 
-const C = createPeer(item => console.log('C received', item))
+const C = createPeer('C', item => console.log('C received', item))
 C.add({third: 'item'})
 
 // A <-> B <-> C replication
