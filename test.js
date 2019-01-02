@@ -3,7 +3,7 @@
 const test = require('tape')
 const sortBy = require('lodash.sortby')
 
-const createPeer = require('./dist')
+const createPeer = require('.')
 
 const noop = () => {}
 
