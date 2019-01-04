@@ -28,6 +28,7 @@
 		"ndjson": "^1.5.0"
 	},
 	"devDependencies": {
+		"lodash.debounce": "^4.0.8",
 		"lodash.sortby": "^4.7.0",
 		"tap-min": "^1.2.2",
 		"tape": "^4.8.0"
