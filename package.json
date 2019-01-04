@@ -1,7 +1,7 @@
 {
 	"name": "want-have-replication",
 	"description": "Replicate anything JSON-serialisable between two peers.",
-	"version": "0.2.2",
+	"version": "1.0.0",
 	"main": "./index.js",
 	"files": [
 		"index.js",
